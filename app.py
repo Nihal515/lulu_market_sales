@@ -1,13 +1,13 @@
 import streamlit as st
 import pandas as pd
-import matplotlib.pyplot as plt
+import plotly.express as px
 
 # ----------------------
 # Load dataset from Excel
 # ----------------------
 @st.cache_data
 def load_data():
-    return pd.read_excel("lulu_sales_dataset.xlsx")
+    return pd.read_excel("lulu_sales_dashboard.xlsx")
 
 df = load_data()
 
@@ -83,35 +83,38 @@ col3.metric("Avg Sales", f"AED {filtered_df['SalesAmount'].mean():,.2f}")
 col4.metric("Avg Loyalty Points Redeemed", f"{filtered_df['LoyaltyPointsRedeemed'].mean():.1f}")
 
 # ----------------------
-# Dynamic Chart Selection
+# Dynamic Chart Selection with Plotly
 # ----------------------
 st.subheader("Sales by Location - Choose Chart Type")
 chart_type = st.selectbox("Choose chart type", ["Bar", "Pie", "Line"])
 
-sales_by_location = filtered_df.groupby("Location")["SalesAmount"].sum()
+sales_by_location = filtered_df.groupby("Location")["SalesAmount"].sum().reset_index()
 
 if chart_type == "Bar":
-    st.bar_chart(sales_by_location)
+    fig = px.bar(sales_by_location, x="Location", y="SalesAmount", title="Sales by Location")
+    st.plotly_chart(fig)
 elif chart_type == "Pie":
-    fig, ax = plt.subplots()
-    sales_by_location.plot.pie(autopct='%1.1f%%', ax=ax)
-    st.pyplot(fig)
+    fig = px.pie(sales_by_location, names="Location", values="SalesAmount", title="Sales by Location")
+    st.plotly_chart(fig)
 elif chart_type == "Line":
-    st.line_chart(sales_by_location)
+    fig = px.line(sales_by_location, x="Location", y="SalesAmount", title="Sales by Location")
+    st.plotly_chart(fig)
 
 # ----------------------
 # Cross-Filtering by Location & Category
 # ----------------------
 st.subheader("Product Category Sales for Selected Location")
-selected_location = st.selectbox("Select Location", df["Location"].unique())
-st.bar_chart(df[df["Location"] == selected_location].groupby("ProductCategory")["SalesAmount"].sum())
+selected_location = st.selectbox("Select Location for Category Analysis", df["Location"].unique())
+category_sales = df[df["Location"] == selected_location].groupby("ProductCategory")["SalesAmount"].sum().reset_index()
+fig2 = px.bar(category_sales, x="ProductCategory", y="SalesAmount", title=f"Product Category Sales in {selected_location}")
+st.plotly_chart(fig2)
 
 # ----------------------
 # Customer Drilldown
 # ----------------------
 st.subheader("Customer Drilldown")
 customer_id = st.selectbox("Choose Customer", df["CustomerID"].unique())
-st.write(df[df["CustomerID"] == customer_id])
+st.dataframe(df[df["CustomerID"] == customer_id])
 
 # ----------------------
 # Data Preview
